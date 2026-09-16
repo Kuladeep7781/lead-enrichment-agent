@@ -1,5 +1,6 @@
 import json
 import re
+from typing import Any
 
 import requests
 
@@ -8,9 +9,10 @@ from models import CompanyData, TeamMember
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "qwen2.5:3b"
+OLLAMA_TIMEOUT_SECONDS = 300
 
 
-def extract_contact_points(text):
+def extract_contact_points(text: str) -> list[str]:
     """Extract public email addresses directly from website text."""
 
     email_pattern = (
@@ -18,247 +20,413 @@ def extract_contact_points(text):
         r"@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
     )
 
-    emails = re.findall(
-        email_pattern,
-        text,
-    )
+    emails = re.findall(email_pattern, text)
 
     return list(dict.fromkeys(emails))
 
 
-def extract_linkedin_urls(text):
-    """Extract LinkedIn profile URLs found in website text."""
+def clean_llm_response(response_text: str) -> str:
+    """Remove common Markdown code fences from an LLM response."""
 
-    linkedin_pattern = (
-        r"https?://(?:www\.)?linkedin\.com/in/"
-        r"[A-Za-z0-9_-]+/?"
+    cleaned = response_text.strip()
+
+    cleaned = re.sub(
+        r"^```(?:json)?\s*",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
     )
 
-    urls = re.findall(
-        linkedin_pattern,
-        text,
+    cleaned = re.sub(
+        r"\s*```$",
+        "",
+        cleaned,
     )
 
-    return list(dict.fromkeys(urls))
+    return cleaned.strip()
 
 
-def count_sentences(text):
-    """Count sentences using sentence-ending punctuation."""
+def parse_json_response(response_text: str) -> dict[str, Any]:
+    """Parse a JSON object returned by the LLM."""
 
-    sentences = re.findall(
-        r"[^.!?]+[.!?]",
-        text.strip(),
-    )
+    cleaned = clean_llm_response(response_text)
 
-    return len(sentences)
+    try:
+        result = json.loads(cleaned)
 
+        if isinstance(result, dict):
+            return result
 
-def format_two_sentence_overview(text):
-    """
-    Convert text into exactly two sentences.
+    except json.JSONDecodeError:
+        pass
 
-    If the LLM returns two or more sentences,
-    keep the first two.
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
 
-    If it returns one long sentence or text without
-    punctuation, split the text approximately in half.
-    """
-
-    text = " ".join(
-        text.strip().split()
-    )
-
-    if not text:
-        return ""
-
-    sentences = re.findall(
-        r"[^.!?]+[.!?]",
-        text,
-    )
-
-    if len(sentences) >= 2:
-        return " ".join(
-            sentence.strip()
-            for sentence in sentences[:2]
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(
+            "LLM response did not contain a valid JSON object."
         )
 
-    body = text.rstrip(".!?").strip()
+    try:
+        result = json.loads(
+            cleaned[start:end + 1]
+        )
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "LLM response contained invalid JSON."
+        ) from error
 
-    words = body.split()
+    if not isinstance(result, dict):
+        raise ValueError(
+            "LLM output was not a JSON object."
+        )
 
-    if len(words) < 2:
-        return body + "."
-
-    midpoint = len(words) // 2
-
-    first_part = " ".join(
-        words[:midpoint]
-    ).strip()
-
-    second_part = " ".join(
-        words[midpoint:]
-    ).strip()
-
-    if not first_part or not second_part:
-        return body + "."
-
-    return (
-        first_part.rstrip(".!?")
-        + ". "
-        + second_part.rstrip(".!?")
-        + "."
-    )
+    return result
 
 
-def has_two_sentence_overview(text):
-    """Check whether an overview contains exactly two sentences."""
+def split_into_sentences(text: str) -> list[str]:
+    """Split text into simple sentences."""
 
-    text = " ".join(
-        text.strip().split()
-    )
+    normalized = " ".join(text.split()).strip()
 
-    if not text:
-        return False
+    if not normalized:
+        return []
 
-    sentences = re.findall(
-        r"[^.!?]+[.!?]",
+    return [
+        sentence.strip()
+        for sentence in re.split(
+            r"(?<=[.!?])\s+",
+            normalized,
+        )
+        if sentence.strip()
+    ]
+
+
+def clean_prose_text(text: str) -> str:
+    """Remove common Markdown formatting from prose."""
+
+    if not isinstance(text, str):
+        return ""
+
+    text = text.strip()
+
+    # Markdown headings.
+    text = re.sub(
+        r"#{1,6}\s*",
+        "",
         text,
     )
 
-    return len(sentences) == 2
+    # Bold / italic.
+    text = re.sub(
+        r"\*\*([^*]+)\*\*",
+        r"\1",
+        text,
+    )
+
+    text = re.sub(
+        r"__([^_]+)__",
+        r"\1",
+        text,
+    )
+
+    text = re.sub(
+        r"\*([^*]+)\*",
+        r"\1",
+        text,
+    )
+
+    # Inline code.
+    text = re.sub(
+        r"`([^`]+)`",
+        r"\1",
+        text,
+    )
+
+    # Markdown links.
+    text = re.sub(
+        r"\[([^\]]+)\]\([^)]+\)",
+        r"\1",
+        text,
+    )
+
+    # Bullet prefixes.
+    text = re.sub(
+        r"(^|\s)[\-•]\s+",
+        r"\1",
+        text,
+    )
+
+    # Numbered list prefixes.
+    text = re.sub(
+        r"(^|\s)\d+\.\s+",
+        r"\1",
+        text,
+    )
+
+    return " ".join(text.split()).strip()
 
 
-def build_prompt(company_text):
-    """Build the extraction prompt for the local LLM."""
+def remove_llm_commentary(text: str) -> str:
+    """Remove obvious LLM summary commentary."""
+
+    sentences = split_into_sentences(text)
+
+    if not sentences:
+        return ""
+
+    commentary_patterns = [
+        r"^here(?:'s| is) (?:a|an) .*summary",
+        r"^here(?:'s| is) (?:a|an) .*overview",
+        r"^this (?:is|provides) (?:a|an) .*summary",
+        r"^the following (?:is|provides)",
+        r"^key (?:features|benefits|points)",
+        r"^in summary",
+        r"^overall,",
+        r"^note that",
+        r"^as (?:a )?summary",
+    ]
+
+    result = []
+
+    for sentence in sentences:
+        lowered = sentence.lower().strip()
+
+        if any(
+            re.search(pattern, lowered)
+            for pattern in commentary_patterns
+        ):
+            continue
+
+        result.append(sentence)
+
+    return " ".join(result).strip()
+
+
+def clean_overview_text(text: str) -> str:
+    """Clean an LLM-generated company overview."""
+
+    text = clean_prose_text(text)
+
+    prefixes = [
+        "here's a summary of",
+        "here is a summary of",
+        "here's an overview of",
+        "here is an overview of",
+        "summary:",
+        "overview:",
+    ]
+
+    lowered = text.lower()
+
+    for prefix in prefixes:
+        if lowered.startswith(prefix):
+            text = text[len(prefix):].strip()
+            text = text.lstrip(":.- ")
+            break
+
+    return remove_llm_commentary(text)
+
+
+def format_two_sentence_overview(overview: str) -> str:
+    """Return a concise overview containing exactly two sentences."""
+
+    text = clean_overview_text(overview)
+
+    if not text:
+        return (
+            "The company provides products or services described "
+            "in the supplied website content. The retrieved pages "
+            "did not provide enough additional information for a "
+            "more specific summary."
+        )
+
+    sentences = split_into_sentences(text)
+
+    if len(sentences) >= 2:
+        return (
+            sentences[0].rstrip(".!?").strip()
+            + ". "
+            + sentences[1].rstrip(".!?").strip()
+            + "."
+        )
+
+    sentence = text.rstrip(".!?").strip()
+
+    # Try a natural comma/semicolon split.
+    positions = [
+        match.start()
+        for match in re.finditer(
+            r"[,;]",
+            sentence,
+        )
+    ]
+
+    if positions:
+        midpoint = len(sentence) // 2
+        position = min(
+            positions,
+            key=lambda value: abs(value - midpoint),
+        )
+
+        first = sentence[:position].strip()
+        second = sentence[position + 1:].strip()
+
+        if first and second:
+            return f"{first}. {second}."
+
+    words = sentence.split()
+
+    if len(words) >= 8:
+        midpoint = len(words) // 2
+
+        first = " ".join(words[:midpoint])
+        second = " ".join(words[midpoint:])
+
+        return f"{first}. {second}."
+
+    return (
+        sentence
+        + ". The supplied website content contains limited "
+        + "additional information."
+    )
+
+
+def clean_target_audience(text: str) -> str:
+    """Clean and shorten the target audience field."""
+
+    text = clean_prose_text(text)
+    text = remove_llm_commentary(text)
+
+    if not text:
+        return (
+            "The supplied website content did not clearly identify "
+            "the company's primary target audience."
+        )
+
+    sentences = split_into_sentences(text)
+
+    if not sentences:
+        return (
+            "The supplied website content did not clearly identify "
+            "the company's primary target audience."
+        )
+
+    # Keep only the first two useful sentences.
+    selected = sentences[:2]
+
+    cleaned = " ".join(
+        sentence.rstrip(".!?").strip()
+        for sentence in selected
+    )
+
+    # Fix a common small-model punctuation problem.
+    cleaned = re.sub(
+        r"\s+(It|They|These|This|For|The)\s+",
+        r". \1 ",
+        cleaned,
+        count=1,
+    )
+
+    cleaned = cleaned.strip(" .")
+
+    return cleaned + "."
+
+
+def build_extraction_prompt(website_context: str) -> str:
+    """Build a grounded extraction prompt for Ollama."""
 
     return f"""
-You are a company research assistant.
+You extract structured company intelligence from public company
+website pages.
 
-Extract company intelligence ONLY from the website
-content provided below.
+Use ONLY the supplied website content.
+Do not use outside knowledge.
+Do not guess.
+Do not invent missing information.
 
-IMPORTANT RULES:
+SOURCE PAGE labels identify the pages from which the information
+was retrieved.
 
-1. Do not invent or guess information.
-2. Use only information explicitly present in the
-   website content.
-3. If information is missing, use an empty string
-   or empty list.
-4. The company_overview MUST contain EXACTLY TWO
-   sentences.
-5. Keep the company_overview concise.
-6. Identify the PRIMARY CUSTOMER target audience
-   or ideal customer profile.
-7. Do NOT describe employees, job candidates,
-   investors, or partners as the target audience
-   unless the website clearly identifies them as
-   customers.
-8. Identify key company leadership or team members
-   when their names and roles are clearly stated.
-9. Do not treat customers, investors, partners,
-   podcast guests, article subjects, or unrelated
-   people as company employees or leaders.
-10. Do not create email addresses.
-11. Do not create LinkedIn URLs.
-12. Only use a LinkedIn URL when that exact URL is
-    present in the website content.
+COMPANY OVERVIEW:
+Write exactly TWO concise normal sentences explaining what the
+company does.
 
-SOURCE PAGE PRIORITY:
+TARGET AUDIENCE:
+Write ONE or TWO concise normal sentences describing the actual
+customers or users of the company's products or services.
 
-For leadership and company information, prioritize
-information from pages whose URL contains:
+Do not describe employees, job candidates, investors, or partners
+as customers.
 
+LEADERSHIP:
+Extract key company leaders or team members ONLY when the supplied
+website content clearly identifies them as company employees,
+founders, cofounders, executives, or team members.
+
+Prioritize evidence from:
 - /team
 - /leadership
 - /founders
 - /company
 - /about
 
-Information from these pages is more relevant for
-identifying company employees and leadership.
+Do NOT treat the following as company leadership:
+- investors
+- investment firms
+- venture capital firms
+- angel funds
+- partner companies
+- customers
+- podcast guests
+- event speakers
+- article authors
+- people mentioned only in unrelated content
 
-Pages such as:
+A leadership name should be the person's actual name, not a company,
+fund, or organization.
 
-- /blog
-- /articles
-- /podcast
-- /press
-- /customers
-- /investors
+If leadership cannot be established clearly, return an empty list.
 
-may mention other people. Do NOT automatically
-consider those people company employees.
+LINKEDIN:
+Only return a LinkedIn URL when the exact URL appears in the
+supplied website content and is clearly associated with that person.
 
-LEADERSHIP EXTRACTION:
+Never construct a LinkedIn URL from a person's name.
 
-For every person clearly identified as a company
-leader or team member, return:
+EMAIL:
+Only return an email address when the exact address appears in the
+supplied website content.
 
-- name
-- role
-- LinkedIn URL only if explicitly present
+Never invent contact addresses.
 
-Examples of useful leadership roles include:
+CONFIDENCE:
+Return a value from 0.0 to 1.0 reflecting how complete and directly
+supported the extracted information is.
 
-- Founder
-- Co-Founder
-- CEO
-- CTO
-- CFO
-- COO
-- President
-- Chief Executive Officer
-- Chief Technology Officer
-- Chief Financial Officer
-- Chief Operating Officer
-- Head of Engineering
-- Head of Product
-- Head of Sales
-- VP Engineering
-- VP Product
-- VP Sales
+Do not automatically return 1.0.
 
-If the website does not provide reliable leadership
-information, return an empty leadership list.
+OUTPUT:
+Return ONLY one JSON object containing:
+company_overview
+target_audience
+contact_points
+leadership
+confidence_score
 
-Do not infer a person's role from their name.
+Do not return Markdown.
+Do not return explanations.
+Do not return comments.
 
-CONFIDENCE SCORE:
+WEBSITE CONTENT:
 
-- Must be between 0.0 and 1.0.
-- 0.0 means very low confidence.
-- 1.0 means very high confidence.
-- Do not use a percentage.
-- Do not use a 1-10 scale.
-
-Return ONLY valid JSON with these fields:
-
-{{
-  "company_overview": "Sentence one. Sentence two.",
-  "target_audience": "Primary customer target audience or ideal customer profile.",
-  "contact_points": [],
-  "leadership": [
-    {{
-      "name": "Person name",
-      "role": "Person role",
-      "linkedin_url": null
-    }}
-  ],
-  "confidence_score": 0.0
-}}
-
-Remember:
-
-company_overview = EXACTLY 2 sentences.
-
-Website content:
-
-{company_text}
-"""
+{website_context}
+""".strip()
 
 
-def call_ollama(prompt):
-    """Send a prompt to the local Ollama model."""
+def call_ollama(prompt: str) -> str:
+    """Send the extraction request to the local Ollama model."""
 
     response = requests.post(
         OLLAMA_URL,
@@ -268,79 +436,109 @@ def call_ollama(prompt):
             "format": CompanyData.model_json_schema(),
             "stream": False,
         },
-        timeout=120,
+        timeout=OLLAMA_TIMEOUT_SECONDS,
     )
 
     response.raise_for_status()
 
-    return response.json()["response"]
+    response_data = response.json()
 
-
-def normalize_confidence_score(value):
-    """Convert common confidence formats to 0.0-1.0."""
-
-    score = float(value)
-
-    if 1.0 < score <= 10.0:
-        score = score / 10.0
-
-    elif 10.0 < score <= 100.0:
-        score = score / 100.0
-
-    return max(
-        0.0,
-        min(1.0, score),
+    generated_text = response_data.get(
+        "response",
+        "",
     )
 
-
-def extract_company_data(company_text):
-    """
-    Extract structured company intelligence.
-
-    Emails and LinkedIn URLs are extracted with Python.
-
-    Semantic fields are extracted by the LLM.
-    """
-
-    emails = extract_contact_points(
-        company_text
-    )
-
-    linkedin_urls = extract_linkedin_urls(
-        company_text
-    )
-
-    prompt = build_prompt(
-        company_text
-    )
-
-    raw_output = call_ollama(
-        prompt
-    )
-
-    data = json.loads(
-        raw_output
-    )
-
-    data["confidence_score"] = (
-        normalize_confidence_score(
-            data.get(
-                "confidence_score",
-                0.0,
-            )
+    if not generated_text:
+        raise ValueError(
+            "Ollama returned an empty response."
         )
+
+    return generated_text
+
+
+def normalize_contact_points(
+    emails: list[str],
+) -> list[str]:
+    """Normalize and deduplicate email addresses."""
+
+    normalized = []
+
+    for email in emails:
+        value = email.strip().lower()
+
+        if value and value not in normalized:
+            normalized.append(value)
+
+    return normalized
+
+
+def normalize_linkedin_url(
+    value: Any,
+) -> str | None:
+    """Accept only LinkedIn URLs returned by the LLM."""
+
+    if not isinstance(value, str):
+        return None
+
+    value = value.strip()
+
+    if not value.startswith(
+        "https://www.linkedin.com/"
+    ):
+        return None
+
+    return value
+
+
+def looks_like_organization_name(
+    name: str,
+) -> bool:
+    """Reject obvious company, fund, and organization names."""
+
+    lowered = name.lower()
+
+    blocked_terms = [
+        "fund",
+        "ventures",
+        "capital",
+        "partners",
+        "investment",
+        "company",
+        "technologies",
+        "technology",
+        "labs",
+        "angel",
+        "inc.",
+        "llc",
+        "ltd.",
+    ]
+
+    return any(
+        term in lowered
+        for term in blocked_terms
     )
 
-    # Use deterministic email extraction.
-    data["contact_points"] = emails
 
-    # Clean and validate leadership data.
+def normalize_leadership(
+    leadership_data: Any,
+) -> list[TeamMember]:
+    """Validate and filter leadership records."""
+
+    if not isinstance(
+        leadership_data,
+        list,
+    ):
+        return []
+
     leadership = []
 
-    for member in data.get(
-        "leadership",
-        [],
-    ):
+    for member in leadership_data:
+
+        if not isinstance(
+            member,
+            dict,
+        ):
+            continue
 
         name = str(
             member.get(
@@ -359,60 +557,182 @@ def extract_company_data(company_text):
         if not name or not role:
             continue
 
-        leadership.append(
-            TeamMember(
-                name=name,
-                role=role,
-                linkedin_url=member.get(
-                    "linkedin_url"
-                ),
+        # A single first name is not sufficiently reliable.
+        if len(name.split()) < 2:
+            continue
+
+        if looks_like_organization_name(name):
+            continue
+
+        lowered_role = role.lower()
+
+        # Reject obvious non-leadership contexts.
+        blocked_roles = [
+            "angel fund",
+            "venture",
+            "investor",
+            "investment",
+            "partner",
+            "customer",
+            "podcast",
+            "speaker",
+            "author",
+        ]
+
+        if any(
+            term in lowered_role
+            for term in blocked_roles
+        ):
+            continue
+
+        linkedin_url = normalize_linkedin_url(
+            member.get(
+                "linkedin_url"
             )
         )
 
-    data["leadership"] = leadership
+        try:
+            person = TeamMember(
+                name=name,
+                role=role,
+                linkedin_url=linkedin_url,
+            )
+        except Exception:
+            continue
 
-    # Attach explicitly discovered LinkedIn URLs
-    # when a leadership member does not already have one.
-    if linkedin_urls:
-
-        for index, url in enumerate(
-            linkedin_urls
+        if any(
+            existing.name.lower() == person.name.lower()
+            for existing in leadership
         ):
+            continue
 
-            if index < len(
-                data["leadership"]
-            ):
+        leadership.append(person)
 
-                member = data[
-                    "leadership"
-                ][index]
+    return leadership
 
-                if member.linkedin_url is None:
-                    member.linkedin_url = url
 
-    # Always normalize the overview.
-    overview = data.get(
-        "company_overview",
-        "",
+def calculate_confidence(
+    company_overview: str,
+    target_audience: str,
+    contact_points: list[str],
+    leadership: list[TeamMember],
+) -> float:
+    """
+    Calculate a conservative confidence score from the extracted
+    evidence and completeness of the result.
+    """
+
+    score = 0.0
+
+    if len(company_overview.split()) >= 12:
+        score += 0.35
+
+    if len(target_audience.split()) >= 5:
+        score += 0.30
+
+    if contact_points:
+        score += 0.15
+
+    if leadership:
+        score += 0.20
+
+    # Do not claim perfect confidence from a small local model.
+    return round(
+        min(score, 0.90),
+        2,
+    )
+
+
+def extract_company_data(
+    company_text: str,
+) -> CompanyData:
+    """Extract and validate structured company intelligence."""
+
+    if not company_text.strip():
+        raise ValueError(
+            "No website content was provided to the LLM extractor."
+        )
+
+    # ---------------------------------------------------------
+    # 1. Extract emails deterministically.
+    # ---------------------------------------------------------
+    contact_points = normalize_contact_points(
+        extract_contact_points(company_text)
+    )
+
+    # ---------------------------------------------------------
+    # 2. Build grounded prompt.
+    # ---------------------------------------------------------
+    prompt = build_extraction_prompt(
+        company_text
+    )
+
+    # ---------------------------------------------------------
+    # 3. Call local Ollama model.
+    # ---------------------------------------------------------
+    raw_response = call_ollama(
+        prompt
+    )
+
+    # ---------------------------------------------------------
+    # 4. Parse JSON.
+    # ---------------------------------------------------------
+    data = parse_json_response(
+        raw_response
+    )
+
+    # ---------------------------------------------------------
+    # 5. Extract raw fields.
+    # ---------------------------------------------------------
+    overview = str(
+        data.get(
+            "company_overview",
+            "",
+        )
     ).strip()
 
+    target_audience = str(
+        data.get(
+            "target_audience",
+            "",
+        )
+    ).strip()
+
+    leadership = normalize_leadership(
+        data.get(
+            "leadership",
+            [],
+        )
+    )
+
+    # ---------------------------------------------------------
+    # 6. Clean final prose.
+    # ---------------------------------------------------------
     overview = format_two_sentence_overview(
         overview
     )
 
-    data["company_overview"] = overview
-
-    # Validate the final structured result.
-    company_data = CompanyData.model_validate(
-        data
+    target_audience = clean_target_audience(
+        target_audience
     )
 
-    if not has_two_sentence_overview(
-        company_data.company_overview
-    ):
-        raise ValueError(
-            "Company overview could not be "
-            "converted into exactly two sentences."
-        )
+    # ---------------------------------------------------------
+    # 7. Calculate confidence.
+    # ---------------------------------------------------------
+    confidence_score = calculate_confidence(
+        company_overview=overview,
+        target_audience=target_audience,
+        contact_points=contact_points,
+        leadership=leadership,
+    )
 
-    return company_data
+    # ---------------------------------------------------------
+    # 8. Final Pydantic validation.
+    # ---------------------------------------------------------
+    return CompanyData(
+        company_overview=overview,
+        target_audience=target_audience,
+        contact_points=contact_points,
+        leadership=leadership,
+        confidence_score=confidence_score,
+    )

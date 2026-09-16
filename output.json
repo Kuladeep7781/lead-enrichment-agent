@@ -2,27 +2,21 @@
   {
     "domain": "postman.com",
     "status": "success",
-    "company_overview": "Postman is an API platform designed to streamline the entire API lifecycle for developers and organizations. It simplifies API testing, development, and collaboration, enabling users to create, manage, and secure APIs more efficiently.",
-    "target_audience": "Postman is designed for developers and organizations of all sizes. It caters to a wide range of industries, including finance, e-commerce, and technology. The platform's features are tailored for developers looking to create and manage APIs, as well as for organizations aiming to implement and govern APIs. Postman's product is used by companies of all sizes, from small startups to large enterprises like the Fortune 500.",
+    "company_overview": "Postman is an API platform that helps developers build and use APIs more efficiently. It streamlines the API lifecycle and collaboration, making it easier for organizations to create and manage APIs.",
+    "target_audience": "Postman's target audience includes developers, API managers, and organizations looking to streamline their API development and management processes. They serve nearly every industry, as evidenced by their diverse customer stories, including Nubank, Cisco Meraki, PayPal, and many Fortune 500 companies.",
     "contact_points": [
       "info@postman.com",
       "info-jp@postman.com",
       "help@postman.com"
     ],
-    "leadership": [
-      {
-        "name": "Abhinav Asthana",
-        "role": "CEO and co-founder",
-        "linkedin_url": "https://www.linkedin.com/in/abhinavasthana/"
-      }
-    ],
-    "confidence_score": 0.95
+    "leadership": [],
+    "confidence_score": 0.8
   },
   {
     "domain": "supabase.com",
     "status": "success",
-    "company_overview": "Supabase Series. F ARTICLE.",
-    "target_audience": "Individual investors, Founders, and Investors",
+    "company_overview": "Supabase is a company dedicated to the development and promotion of open-source software, particularly focusing on its Supabase platform, which serves as an alternative to Firebase for building backend systems. The company was founded to address the challenges faced by developers who are building applications, especially those with a focus on AI and data management.",
+    "target_audience": "Supabase caters to a wide range of developers, including those building applications focused on AI, those interested in open-source software, and those who need to manage and scale their data efficiently. The company's focus on Postgres database and its associated tools like Supabase functions, Edge Functions, and pgvector extension make it particularly appealing to developers who want to ensure their applications are production-ready and compliant with regulatory standards such as SOC 2 and HIPAA.",
     "contact_points": [
       "legal@supabase.com",
       "privacy@supabase.com",
@@ -30,43 +24,16 @@
       "security@supabase.com",
       "help-events@supabase.com"
     ],
-    "leadership": [
-      {
-        "name": "Paul Copplestone",
-        "role": "Founder",
-        "linkedin_url": null
-      },
-      {
-        "name": "Thorsten Schaeff",
-        "role": "DevRel",
-        "linkedin_url": null
-      },
-      {
-        "name": "Solomon Hykes",
-        "role": "Cofounder",
-        "linkedin_url": null
-      }
-    ],
-    "confidence_score": 0.97
+    "leadership": [],
+    "confidence_score": 0.8
   },
   {
     "domain": "vapi.ai",
     "status": "success",
-    "company_overview": "Vapi is a platform for advanced voice AI agents, enabling. rapid deployment and continuous improvement of voice interactions at enterprise scale.",
-    "target_audience": "Enterprise teams and organizations looking to build, deploy, and enhance voice AI agents.",
+    "company_overview": "Vapi provides advanced voice AI agents and platforms for businesses to build, deploy, and manage voice interactions. The platform offers various success packages tailored to different organizational needs, ranging from basic plans for startups to premium plans for large enterprises.",
+    "target_audience": "The actual customers or users of Vapi's products or services are businesses and enterprises that require advanced voice AI solutions for customer support, business automation, and telephony integration.",
     "contact_points": [],
-    "leadership": [
-      {
-        "name": "Jason Mitura",
-        "role": "VP of Software Development",
-        "linkedin_url": null
-      },
-      {
-        "name": "Alejandro Maza",
-        "role": "Chief Product & AI Officer",
-        "linkedin_url": null
-      }
-    ],
-    "confidence_score": 1.0
+    "leadership": [],
+    "confidence_score": 0.65
   }
 ]
