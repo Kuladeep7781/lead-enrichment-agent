@@ -2,31 +2,68 @@
   {
     "domain": "postman.com",
     "status": "success",
-    "company_overview": "Postman is an API platform that aims to simplify the API lifecycle for developers. Founded by Abhinav Asthana, Ankit Sobti, and Abhijit Kane, Postman began as a side project to solve an API testing problem.",
-    "target_audience": "Developers, API managers, and organizations looking to streamline their API development and management processes.",
+    "company_overview": "Postman is an API platform designed to streamline the entire API lifecycle for developers and organizations. It simplifies API testing, development, and collaboration, enabling users to create, manage, and secure APIs more efficiently.",
+    "target_audience": "Postman is designed for developers and organizations of all sizes. It caters to a wide range of industries, including finance, e-commerce, and technology. The platform's features are tailored for developers looking to create and manage APIs, as well as for organizations aiming to implement and govern APIs. Postman's product is used by companies of all sizes, from small startups to large enterprises like the Fortune 500.",
     "contact_points": [
       "info@postman.com",
       "info-jp@postman.com",
       "help@postman.com"
     ],
-    "leadership": [],
-    "confidence_score": 1.0
+    "leadership": [
+      {
+        "name": "Abhinav Asthana",
+        "role": "CEO and co-founder",
+        "linkedin_url": "https://www.linkedin.com/in/abhinavasthana/"
+      }
+    ],
+    "confidence_score": 0.95
   },
   {
-    "domain": "this-domain-does-not-exist-12345.com",
-    "status": "failed",
-    "error": "No usable website text was extracted."
+    "domain": "supabase.com",
+    "status": "success",
+    "company_overview": "Supabase Series. F ARTICLE.",
+    "target_audience": "Individual investors, Founders, and Investors",
+    "contact_points": [
+      "legal@supabase.com",
+      "privacy@supabase.com",
+      "abuse@supabase.com",
+      "security@supabase.com",
+      "help-events@supabase.com"
+    ],
+    "leadership": [
+      {
+        "name": "Paul Copplestone",
+        "role": "Founder",
+        "linkedin_url": null
+      },
+      {
+        "name": "Thorsten Schaeff",
+        "role": "DevRel",
+        "linkedin_url": null
+      },
+      {
+        "name": "Solomon Hykes",
+        "role": "Cofounder",
+        "linkedin_url": null
+      }
+    ],
+    "confidence_score": 0.97
   },
   {
     "domain": "vapi.ai",
     "status": "success",
-    "company_overview": "Vapi offers a unified platform for building, deploying, and improving voice. agents, enabling faster agent development and continuous improvement of agent experiences.",
-    "target_audience": "Enterprise-scale organizations and developers looking to build, deploy, and improve voice agents.",
+    "company_overview": "Vapi is a platform for advanced voice AI agents, enabling. rapid deployment and continuous improvement of voice interactions at enterprise scale.",
+    "target_audience": "Enterprise teams and organizations looking to build, deploy, and enhance voice AI agents.",
     "contact_points": [],
     "leadership": [
       {
         "name": "Jason Mitura",
         "role": "VP of Software Development",
+        "linkedin_url": null
+      },
+      {
+        "name": "Alejandro Maza",
+        "role": "Chief Product & AI Officer",
         "linkedin_url": null
       }
     ],
