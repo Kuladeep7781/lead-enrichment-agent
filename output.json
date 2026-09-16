@@ -1,0 +1,35 @@
+[
+  {
+    "domain": "postman.com",
+    "status": "success",
+    "company_overview": "Postman is an API platform that aims to simplify the API lifecycle for developers. Founded by Abhinav Asthana, Ankit Sobti, and Abhijit Kane, Postman began as a side project to solve an API testing problem.",
+    "target_audience": "Developers, API managers, and organizations looking to streamline their API development and management processes.",
+    "contact_points": [
+      "info@postman.com",
+      "info-jp@postman.com",
+      "help@postman.com"
+    ],
+    "leadership": [],
+    "confidence_score": 1.0
+  },
+  {
+    "domain": "this-domain-does-not-exist-12345.com",
+    "status": "failed",
+    "error": "No usable website text was extracted."
+  },
+  {
+    "domain": "vapi.ai",
+    "status": "success",
+    "company_overview": "Vapi offers a unified platform for building, deploying, and improving voice. agents, enabling faster agent development and continuous improvement of agent experiences.",
+    "target_audience": "Enterprise-scale organizations and developers looking to build, deploy, and improve voice agents.",
+    "contact_points": [],
+    "leadership": [
+      {
+        "name": "Jason Mitura",
+        "role": "VP of Software Development",
+        "linkedin_url": null
+      }
+    ],
+    "confidence_score": 1.0
+  }
+]

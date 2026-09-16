@@ -1,0 +1,32 @@
+# Virtual environment
+venv/
+venv_env/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# Local exploration notebooks
+01_exploration.ipynb
+llm_extractor.ipynb
+test_supabase.ipynb
+test_scrape.ipynb
+
+# Raw scraper test data
+postman_scraped.json
+supabase_scraped.json
+vapi_scraped.json
+
+# Temporary files
+untitled.txt
+untitled1.txt
+untitled2.txt
+venv.env
