@@ -2,8 +2,8 @@
   {
     "domain": "postman.com",
     "status": "success",
-    "company_overview": "Postman is an API platform that helps developers build and use APIs more efficiently. It streamlines the API lifecycle and collaboration, making it easier for organizations to create and manage APIs.",
-    "target_audience": "Postman's target audience includes developers, API managers, and organizations looking to streamline their API development and management processes. They serve nearly every industry, as evidenced by their diverse customer stories, including Nubank, Cisco Meraki, PayPal, and many Fortune 500 companies.",
+    "company_overview": "Postman is an API platform that simplifies the entire API lifecycle, from development to governance, for developers and organizations worldwide. The platform aims to streamline collaboration and improve the quality of APIs, enabling better API creation and management.",
+    "target_audience": "The target audience for Postman includes developers and organizations of all sizes and industries, as the platform is designed to simplify the API lifecycle and improve API quality for everyone. The company's services are also used by Fortune 500 companies, indicating their wide range of applications.",
     "contact_points": [
       "info@postman.com",
       "info-jp@postman.com",
@@ -15,8 +15,8 @@
   {
     "domain": "supabase.com",
     "status": "success",
-    "company_overview": "Supabase is a company dedicated to the development and promotion of open-source software, particularly focusing on its Supabase platform, which serves as an alternative to Firebase for building backend systems. The company was founded to address the challenges faced by developers who are building applications, especially those with a focus on AI and data management.",
-    "target_audience": "Supabase caters to a wide range of developers, including those building applications focused on AI, those interested in open-source software, and those who need to manage and scale their data efficiently. The company's focus on Postgres database and its associated tools like Supabase functions, Edge Functions, and pgvector extension make it particularly appealing to developers who want to ensure their applications are production-ready and compliant with regulatory standards such as SOC 2 and HIPAA.",
+    "company_overview": "Supabase is a fully managed Postgres database and API platform that simplifies the development and management of backend services for applications built with frameworks like Elixir and JavaScript. Founded in 2018, Supabase has grown into a leader in the open-source space, with a community of 10,000,000+ registered developers and 200,000+ followers.",
+    "target_audience": "Supabase is designed for developers and innovation teams who are building applications that require enterprise-level backend infrastructure. It is particularly popular among AI builders who are looking to validate their ideas without having to build a complete backend infrastructure from scratch.",
     "contact_points": [
       "legal@supabase.com",
       "privacy@supabase.com",
@@ -30,8 +30,8 @@
   {
     "domain": "vapi.ai",
     "status": "success",
-    "company_overview": "Vapi provides advanced voice AI agents and platforms for businesses to build, deploy, and manage voice interactions. The platform offers various success packages tailored to different organizational needs, ranging from basic plans for startups to premium plans for large enterprises.",
-    "target_audience": "The actual customers or users of Vapi's products or services are businesses and enterprises that require advanced voice AI solutions for customer support, business automation, and telephony integration.",
+    "company_overview": "Vapi provides advanced voice AI agents for businesses, allowing them to build, deploy. and improve voice agents at scale, offering a unified platform for orchestration, monitoring, and configuration.",
+    "target_audience": "Businesses and enterprises looking to build, deploy, and improve voice agents for their customer interactions.",
     "contact_points": [],
     "leadership": [],
     "confidence_score": 0.65

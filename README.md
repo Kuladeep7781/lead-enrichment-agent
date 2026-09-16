@@ -1,39 +1,28 @@
 # Lead Enrichment Agent
 
-A Python-based autonomous lead enrichment pipeline that accepts company
-domains, crawls their public websites, extracts relevant page content,
-and uses a local LLM to produce structured company intelligence.
+A Python-based lead enrichment agent that crawls a company's public website and uses a local LLM to extract structured company intelligence.
 
-The project was built for the SoftwareBrio AI Engineer Intern take-home
-assignment.
+The project was built as part of the SoftwareBrio AI Engineer Intern take-home assignment.
 
-## Features
+## What This Project Does
 
-- Accepts one or more company domains from the command line.
-- Uses Playwright with Chromium for browser-based website crawling.
-- Discovers relevant company pages such as:
-  - About
-  - Company
-  - Team
-  - Leadership
-  - Founders
-  - Contact
-  - Pricing
-- Handles JavaScript-rendered pages through a headless browser.
-- Removes scripts, styles, SVGs, navigation, footer, and other
-  unnecessary HTML content before LLM processing.
-- Limits the amount of website text sent to the LLM.
-- Uses Ollama with `qwen2.5:3b` for local LLM extraction.
-- Validates the structured result using Pydantic.
-- Extracts public email addresses deterministically from website text.
-- Handles failed pages and individual company failures without stopping
-  the entire pipeline.
-- Produces JSON output for each processed company.
+The agent accepts one or more company domains and:
+
+1. Opens the company homepage using Playwright.
+2. Discovers relevant pages such as About, Team, Company, Leadership, Founders, Contact, and Pricing.
+3. Uses a headless Chromium browser to handle JavaScript-rendered websites.
+4. Cleans the retrieved HTML and removes scripts, styles, SVGs, navigation, footers, and other unnecessary content.
+5. Limits the amount of website text sent to the LLM to reduce unnecessary token usage.
+6. Sends the cleaned website content to a local Ollama LLM.
+7. Extracts structured company information using a Pydantic schema.
+8. Handles common website errors without stopping the complete pipeline.
+9. Saves the final results to `output.json`.
 
 ## Project Structure
 
 ```text
 lead-enrichment-agent/
+│
 ├── main.py
 ├── scraper.py
 ├── llm_extractor.py
